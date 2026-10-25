@@ -1,0 +1,81 @@
+{
+  "name": "dsh-external-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opt-in authenticated HTTP API for local and trusted-LAN DSH Desktop integrations",
+  "license": "MIT",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./auth": {
+      "types": "./lib/auth.d.ts",
+      "default": "./lib/auth.js"
+    },
+    "./controller-host": {
+      "types": "./lib/controller-host.d.ts",
+      "default": "./lib/controller-host.js"
+    },
+    "./listener": {
+      "types": "./lib/listener.d.ts",
+      "default": "./lib/listener.js"
+    },
+    "./router": {
+      "types": "./lib/router.d.ts",
+      "default": "./lib/router.js"
+    },
+    "./run-registry": {
+      "types": "./lib/run-registry.d.ts",
+      "default": "./lib/run-registry.js"
+    },
+    "./ownership-store": {
+      "types": "./lib/ownership-store.d.ts",
+      "default": "./lib/ownership-store.js"
+    },
+    "./event-projector": {
+      "types": "./lib/event-projector.d.ts",
+      "default": "./lib/event-projector.js"
+    },
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.0.2",
+    "@deepseek-ai/dsh-agent-presets": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-api-workspace-controller": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-atomic-write": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-settings": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-skill": "0.1.5-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
+    "@types/node": "^22.20.0",
+    "@types/react": "^18",
+    "react": "18.3.1",
+    "tsdown": "0.22.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  }
+}
