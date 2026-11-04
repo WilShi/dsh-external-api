@@ -1,6 +1,6 @@
 {
   "name": "dsh-external-api",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Opt-in authenticated HTTP API for local and trusted-LAN DSH Desktop integrations. · DSH 外部 HTTP API：面向本机与可信局域网的可选鉴权接口，支持会话、Run、SSE 事件与 Token 管理。",
   "publishConfig": {
     "access": "public"

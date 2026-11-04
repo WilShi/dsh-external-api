@@ -284,4 +284,25 @@ describe('external API capability allowlists', () => {
     expect(deniedAgent.response.status).toBe(403)
     expect(harness.fake.calls.create).not.toHaveBeenCalled()
   })
+
+  it('requires an explicit workspace and preset when the token allowlist is restricted', async () => {
+    const token = issueBearerToken('restricted-caller', {
+      allowedWorkspaceIds: ['ws-allowed'],
+      allowedAgentPresets: ['preset-allowed'],
+    })
+    const harness = await startHarness({ token })
+    running.push(harness.server)
+
+    // Omitting the ids would let the host pick a default outside the allowlist.
+    const omitted = await jsonRequest(harness, '/api/v1/sessions', { method: 'POST', body: {} })
+    expect(omitted.response.status).toBe(403)
+    expect(omitted.body.error).toMatchObject({ code: 'WORKSPACE_REQUIRED' })
+    expect(harness.fake.calls.create).not.toHaveBeenCalled()
+
+    const allowed = await jsonRequest(harness, '/api/v1/sessions', {
+      method: 'POST',
+      body: { workspaceId: 'ws-allowed', agentPreset: 'preset-allowed' },
+    })
+    expect(allowed.response.status).toBe(201)
+  })
 })

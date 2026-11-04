@@ -432,8 +432,19 @@ async function createSession(
   if (workspaceId !== undefined && !isAllowed(token.allowedWorkspaceIds, workspaceId)) {
     throw new HttpError(403, 'WORKSPACE_FORBIDDEN', 'The token cannot use this workspace.')
   }
+  // Omitting the id lets the host pick its own default, which may sit outside the
+  // token allowlist; require an explicit choice unless the token allows everything.
+  // An empty allowlist keeps the historical "host default only" behaviour; a
+  // restricted list must be named explicitly, so a default the token cannot use
+  // is never selected behind the caller's back.
+  if (workspaceId === undefined && token.allowedWorkspaceIds.size > 0 && !token.allowedWorkspaceIds.has('*')) {
+    throw new HttpError(403, 'WORKSPACE_REQUIRED', 'This token must name one of its allowed workspaces.')
+  }
   if (agentPreset !== undefined && !isAllowed(token.allowedAgentPresets, agentPreset)) {
     throw new HttpError(403, 'AGENT_FORBIDDEN', 'The token cannot use this agent preset.')
+  }
+  if (agentPreset === undefined && token.allowedAgentPresets.size > 0 && !token.allowedAgentPresets.has('*')) {
+    throw new HttpError(403, 'AGENT_REQUIRED', 'This token must name one of its allowed agent presets.')
   }
   const sessionId = `external-${randomUUID()}`
   assertCurrent()
