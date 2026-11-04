@@ -5,7 +5,8 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.spec.ts'],
     pool: 'threads',
-    maxWorkers: 1,
+    // The suite binds real loopback ports and rewrites temp files; keep it serial.
+    poolOptions: { threads: { singleThread: true } },
     testTimeout: 5_000,
     hookTimeout: 10_000,
   },

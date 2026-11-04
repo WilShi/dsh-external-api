@@ -2,7 +2,24 @@
 
 DSH Desktop 的可选外部 HTTP API。服务默认关闭；启用后绑定 `0.0.0.0`（所有 IPv4 网络接口），并使用用户指定的端口和 Bearer Token 鉴权。
 
-完整的启用说明、请求与响应结构、SSE 重连、错误码和多语言调用示例见[《DSH 外部 HTTP API v1》](../../docs/external-api.md)。本 README 仅保留快速参考。
+本 README 覆盖启用方式、请求与响应结构、SSE 重连、错误码和最小调用示例。
+
+## 兼容性与安装
+
+| 项 | 值 |
+| --- | --- |
+| DSH | 0.2.1-rc.5（Host protocol v4） |
+| Cordis | 4.0.5 |
+| Node | ^22.19.0 或 ^24.0.0 |
+| 插件形态 | Bundle（dsh.bundle.patch）+ Client inject（settings.section 槽位） |
+
+```bash
+dsh plugin --profile web add dsh-external-api
+```
+
+安装后重启 DSH，在「设置 → API 服务」中启用。所有 @deepseek-ai/* 宿主包都声明为 peerDependencies：它们必须由 DSH 运行时提供，插件包自身不安装、也不会带出第二套 cordis 单例。
+
+必需宿主服务（inject）：sessionController、workspaceController、agentPresets、sessionSkillCatalog、webServer。运行时依赖仅 @deepseek-ai/dsh-atomic-write（原子写）与 @deepseek-ai/schemastery（配置 schema）。
 
 ## 快速开始
 
@@ -105,6 +122,7 @@ for (;;) {
 - Host 必须与客户端实际访问的 IPv4 和端口一致；Origin、Fetch Metadata、请求体大小、请求速率、并发 Run 和 SSE 连接数也均有限制。
 - 活动 Run 默认上限为每 Token 10 个、全局 20 个；旧版精确的 `2/4` 默认组合会在启动时自动升级，其他自定义组合不变。
 - 设置管理接口只挂在 DSH 自身的随机回环端口，并校验同源浏览器请求；它用于防止网页跨站调用，不把同一系统账户下的恶意本机进程视为可隔离的安全边界。
+- 管理接口写入的配置保存在 $DSH_HOME/external-api/config-v1.json（目录 0700、文件 0600），与 Token 归属记录 ownership-v1.json 分开存放；加载器下发（cordis.patch.yml）的 config 作为基础层，管理页编辑覆盖其上。
 - 外部 API 是明文 HTTP。仅在受信任的专用网络中启用，并使用系统防火墙把入站来源限制到所需私网；不要把端口直接映射或暴露到公网。跨不受信任网络接入时，应使用 VPN 或受信任的 TLS 反向代理并限制来源网络。
 
 Token 撤销会立即断开它的 SSE 连接、尝试取消活动 Run，并删除其会话归属记录。

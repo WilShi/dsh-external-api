@@ -2,7 +2,12 @@ import { createExternalApiAdminApi } from './api.ts'
 import { ExternalApiSettings } from './ExternalApiSettings.tsx'
 
 export const name = 'dsh-external-api'
-export const inject = ['slots', 'connection']
+/**
+ * Client services this plugin reads. DSH 0.2.1's web shell exposes the `slots`
+ * service; the previous `connection` dependency is gone and unnecessary here
+ * because the admin client calls the same-origin loopback HTTP route directly.
+ */
+export const inject = ['slots']
 
 interface ClientContext {
   slots: {

@@ -60,7 +60,8 @@ function fixture() {
     }),
   }
   const agentPresets = {
-    remoteExportList: vi.fn(async () => ({ presets: [{ id: 'standard' }], authorable: true })),
+    // DSH 0.2.1: remoteExportList() returns the roster only, without an authoring flag.
+    remoteExportList: vi.fn(async () => ({ presets: [{ id: 'standard' }] })),
   }
   const sessionSkillCatalog = {
     list: vi.fn(async () => ({ skills: [{ name: 'review', description: 'Review', modelInvocable: true }] })),
@@ -116,7 +117,7 @@ describe('rc.2 controller host adapter', () => {
     })
     expect((await host.agentPresets.list({ rpcId: 'presets', payload: {} })).result).toEqual({
       ok: true,
-      value: { presets: [{ id: 'standard' }], authorable: true, hasDocument: false },
+      value: { presets: [{ id: 'standard' }], authorable: false, hasDocument: false },
     })
     expect((await host.skills.list({ rpcId: 'skills', payload: { sessionId: 'session-a' } })).result).toEqual({
       ok: true,

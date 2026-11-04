@@ -224,6 +224,47 @@ export const externalApiStyles = String.raw`
   gap: 8px;
   padding-top: 0;
 }
+.dsh-external-api-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dsh-external-api-button[data-size='sm'] {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.dsh-external-api-button[data-variant='primary'] {
+  border-color: transparent;
+  background: var(--dsw-alias-state-business-primary, #155eef);
+  color: var(--dsw-alias-label-invert, #fff);
+}
+.dsh-external-api-button:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+.dsh-external-api-button[data-variant='primary']:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.dsh-external-api-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.dsh-external-api-button:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary, #155eef);
+  outline-offset: 2px;
+}
 .dsh-external-api-banner {
   border-radius: 8px;
   padding: 9px 11px;

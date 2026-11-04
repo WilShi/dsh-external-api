@@ -1,81 +1,119 @@
 {
   "name": "dsh-external-api",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Opt-in authenticated HTTP API for local and trusted-LAN DSH Desktop integrations",
+  "version": "0.2.2",
+  "description": "Opt-in authenticated HTTP API for local and trusted-LAN DSH Desktop integrations. · DSH 外部 HTTP API：面向本机与可信局域网的可选鉴权接口，支持会话、Run、SSE 事件与 Token 管理。",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WilShi/dsh-external-api.git"
+  },
+  "homepage": "https://github.com/WilShi/dsh-external-api#readme",
+  "bugs": {
+    "url": "https://github.com/WilShi/dsh-external-api/issues"
+  },
+  "author": "WilShi",
   "license": "MIT",
   "type": "module",
   "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "types": "./lib/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
+      "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
     "./auth": {
-      "types": "./lib/auth.d.ts",
+      "types": "./lib/types/auth.d.ts",
       "default": "./lib/auth.js"
     },
     "./controller-host": {
-      "types": "./lib/controller-host.d.ts",
+      "types": "./lib/types/controller-host.d.ts",
       "default": "./lib/controller-host.js"
     },
     "./listener": {
-      "types": "./lib/listener.d.ts",
+      "types": "./lib/types/listener.d.ts",
       "default": "./lib/listener.js"
     },
     "./router": {
-      "types": "./lib/router.d.ts",
+      "types": "./lib/types/router.d.ts",
       "default": "./lib/router.js"
     },
     "./run-registry": {
-      "types": "./lib/run-registry.d.ts",
+      "types": "./lib/types/run-registry.d.ts",
       "default": "./lib/run-registry.js"
     },
     "./ownership-store": {
-      "types": "./lib/ownership-store.d.ts",
+      "types": "./lib/types/ownership-store.d.ts",
       "default": "./lib/ownership-store.js"
     },
     "./event-projector": {
-      "types": "./lib/event-projector.d.ts",
+      "types": "./lib/types/event-projector.d.ts",
       "default": "./lib/event-projector.js"
     },
+    "./config": {
+      "types": "./lib/types/config.d.ts",
+      "default": "./lib/config.js"
+    },
     "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
+  "files": [
+    "lib/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || ^24.0.0"
+  },
   "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "build": "tsc -p tsconfig.build.json && node scripts/build-client.mjs && node scripts/verify-client.mjs",
+    "build:host": "tsc -p tsconfig.build.json",
+    "build:client": "node scripts/build-client.mjs && node scripts/verify-client.mjs",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.tests.json --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-agent-presets": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-api-session-controller": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-api-workspace-controller": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-atomic-write": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-settings": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-skill": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.2"
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-agent-preset-registry": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-api-session-controller": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-api-workspace-controller": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-atomic-write": "^0.2.1-rc.5",
+    "@deepseek-ai/schemastery": "^3.18.5",
+    "react": "^18.3.1"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-client-ui-settings": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-agent-preset-registry": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-api-workspace-controller": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.5",
+    "@deepseek-ai/schemastery": "3.18.5",
     "@types/node": "^22.20.0",
-    "@types/react": "^18",
-    "react": "18.3.1",
-    "tsdown": "0.22.2",
-    "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "@types/react": "^18.3.14",
+    "esbuild": "^0.21.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
+      "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-slots"
-      ],
-      "platform": "web"
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
     }
   }
 }

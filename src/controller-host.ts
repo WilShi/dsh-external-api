@@ -1,4 +1,4 @@
-import type { AgentPresets } from '@deepseek-ai/dsh-agent-presets'
+import type { AgentPresetRegistry } from '@deepseek-ai/dsh-agent-preset-registry'
 import type SessionController from '@deepseek-ai/dsh-api-session-controller'
 import type { SessionSkillCatalog } from '@deepseek-ai/dsh-api-session-controller'
 import type WorkspaceController from '@deepseek-ai/dsh-api-workspace-controller'
@@ -44,7 +44,7 @@ interface EventOptions {
 export interface ExternalApiControllerContext {
   readonly sessionController: SessionController
   readonly workspaceController: WorkspaceController
-  readonly agentPresets: AgentPresets
+  readonly agentPresets: AgentPresetRegistry
   readonly sessionSkillCatalog: SessionSkillCatalog
   on(event: 'session/event', listener: (session: { readonly id: string }, event: SessionEventLike) => void, options?: EventOptions): () => void
   on(event: 'agent/assistant-stream', listener: (payload: { readonly agent: AgentLike; readonly frame: AssistantStreamFrameLike }) => void, options?: EventOptions): () => void
@@ -105,12 +105,18 @@ export function createControllerExternalApiHost(ctx: ExternalApiControllerContex
       list: request => respond(request, signal => workspaceBaseline(ctx.workspaceController, signal)),
     },
     agentPresets: {
-      list: request => respond(request, async () => ({
-        ...await ctx.agentPresets.remoteExportList(),
-        // Kept only in this package-private shape for compatibility with the
-        // pre-rc.2 adapter.  The public HTTP projection never exposed it.
-        hasDocument: false,
-      })),
+      list: request => respond(request, async () => {
+        const roster = await ctx.agentPresets.remoteExportList()
+        return {
+          presets: roster.presets,
+          // DSH 0.2.1 declares presets as plugin-owned YAML definitions and the
+          // registry exposes no authoring capability, so external callers can
+          // only list them.  Both flags stay in the wire shape for compatibility
+          // with the published v1 HTTP contract.
+          authorable: false,
+          hasDocument: false,
+        }
+      }),
     },
     skills: {
       list: request => respond(request, signal => ctx.sessionSkillCatalog.list({

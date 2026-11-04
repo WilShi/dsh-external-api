@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from './controls.tsx'
 import type {
   CreatedToken,
   ExternalApiAdminApi,

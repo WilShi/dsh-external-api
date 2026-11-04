@@ -1,6 +1,5 @@
 node_modules/
-lib/
-dist/
-coverage/
-*.log
+/lib/
+*.tsbuildinfo
 .DS_Store
+*.tgz

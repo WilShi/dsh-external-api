@@ -8,6 +8,21 @@ const SETTINGS_SOURCE = readFileSync(fileURLToPath(new URL(
   import.meta.url,
 )), 'utf8')
 
+const CLIENT_ENTRY_SOURCE = readFileSync(fileURLToPath(new URL(
+  '../src-client/index.tsx',
+  import.meta.url,
+)), 'utf8')
+
+describe('external API client entry', () => {
+  it('registers the settings section and only depends on the slots service', () => {
+    expect(CLIENT_ENTRY_SOURCE).toContain("ctx.slots.inject('settings.section'")
+    expect(CLIENT_ENTRY_SOURCE).toContain("name: 'settings.section'")
+    expect(CLIENT_ENTRY_SOURCE).toContain("id: 'external-api'")
+    expect(CLIENT_ENTRY_SOURCE).toContain("export const inject = ['slots']")
+    expect(CLIENT_ENTRY_SOURCE).not.toContain("'connection'")
+  })
+})
+
 describe('external API settings layout', () => {
   it('aligns the port and runtime address as two equal-height control rows', () => {
     expect(externalApiStyles).toMatch(

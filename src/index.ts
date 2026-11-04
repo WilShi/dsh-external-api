@@ -1,9 +1,9 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
 import { createAdminHandler } from './admin.ts'
 import { Config, legacyConcurrencyUpgrade, validateExternalApiConfig } from './config.ts'
+import { FileExternalApiConfigScope } from './config-scope.ts'
 import type { AdminWebServer, ExternalApiConfig, ExternalApiLogger } from './contracts.ts'
 import { ADMIN_API_PREFIX } from './contracts.ts'
 import {
@@ -14,23 +14,27 @@ import { ExternalApiController } from './controller.ts'
 
 export { Config } from './config.ts'
 export type { ExternalApiConfig, ExternalApiScope, ExternalApiTokenRecord } from './contracts.ts'
+export { FileExternalApiConfigScope } from './config-scope.ts'
+export type { ExternalApiConfigPatch, ExternalApiConfigScope } from './config-scope.ts'
 export { createExternalApiServer } from './listener.ts'
 export { createControllerExternalApiHost } from './controller-host.ts'
 
 export const name = 'dsh-external-api'
+/**
+ * Host services this plugin needs. `settings` is deliberately absent: DSH 0.2.1
+ * removed the programmatic `SettingsProvider` scope, so the plugin owns its
+ * live configuration through {@link FileExternalApiConfigScope} instead.
+ */
 export const inject = [
   'sessionController',
   'workspaceController',
   'agentPresets',
   'sessionSkillCatalog',
   'webServer',
-  'settings',
 ]
-export const EXTERNAL_API_SETTINGS_NAMESPACE = 'dsh-external-api'
 
 interface ApplyContext extends ExternalApiControllerContext {
   readonly webServer: AdminWebServer
-  readonly settings: SettingsProvider
   readonly logger: {
     info(format: string, ...args: unknown[]): void
     warn(format: string, ...args: unknown[]): void
@@ -39,14 +43,31 @@ interface ApplyContext extends ExternalApiControllerContext {
   effect<T extends (() => Promise<void> | void)>(setup: () => T | Promise<T>, description?: string): unknown
 }
 
-export async function apply(ctx: ApplyContext, entryConfig: ExternalApiConfig): Promise<void> {
+function dshHome(): string {
+  const configured = process.env.DSH_HOME
+  return configured !== undefined && configured !== '' ? configured : join(homedir(), '.dsh')
+}
+
+/**
+ * Activate the opt-in external API.
+ *
+ * `entryConfig` is the Loader row configuration (validated by the exported
+ * {@link Config} schema). Administrative edits made through the loopback
+ * management API are merged over it and persisted under
+ * `$DSH_HOME/external-api/config-v1.json`.
+ */
+export async function apply(
+  ctx: ApplyContext,
+  entryConfig: ExternalApiConfig = Config({} as ExternalApiConfig),
+): Promise<void> {
   validateExternalApiConfig(entryConfig)
   if (ctx.webServer.host !== '127.0.0.1') {
     throw new Error('dsh-external-api: the management API requires the DSH host web server to use loopback')
   }
-  const settings = ctx.settings.register(EXTERNAL_API_SETTINGS_NAMESPACE, Config, {
+  const home = dshHome()
+  const settings = await FileExternalApiConfigScope.open({
+    filename: join(home, 'external-api', 'config-v1.json'),
     base: entryConfig,
-    applies: 'live',
     validate: validateExternalApiConfig,
   })
   const concurrencyUpgrade = legacyConcurrencyUpgrade(settings.get())
@@ -61,13 +82,10 @@ export async function apply(ctx: ApplyContext, entryConfig: ExternalApiConfig): 
     warn: message => ctx.logger.warn(message),
     error: message => ctx.logger.error(message),
   }
-  const dshHome = process.env.DSH_HOME !== undefined && process.env.DSH_HOME !== ''
-    ? process.env.DSH_HOME
-    : join(homedir(), '.dsh')
   const controller = new ExternalApiController({
     host: createControllerExternalApiHost(ctx),
     config: settings.get(),
-    ownershipFile: join(dshHome, 'external-api', 'ownership-v1.json'),
+    ownershipFile: join(home, 'external-api', 'ownership-v1.json'),
     logger,
   })
 
