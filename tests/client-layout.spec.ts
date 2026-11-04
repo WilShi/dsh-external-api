@@ -62,7 +62,9 @@ describe('external API settings layout', () => {
   })
 
   it('distinguishes the all-interface bind address from the loopback access URL', () => {
-    expect(SETTINGS_SOURCE).toContain("`${status?.runtime.host ?? '0.0.0.0'}:${runtimePort}`")
+    expect(SETTINGS_SOURCE).toContain("`${status?.runtime.host ?? '127.0.0.1'}:${runtimePort}`")
+    expect(SETTINGS_SOURCE).toContain('>监听地址</span>')
+    expect(SETTINGS_SOURCE).toContain('默认 <code>127.0.0.1</code>')
     expect(SETTINGS_SOURCE).toContain('`http://127.0.0.1:${runtimePort}/api/v1`')
     expect(SETTINGS_SOURCE).toContain('>实际绑定地址</span>')
     expect(SETTINGS_SOURCE).toContain('>本机访问 URL</span>')
@@ -72,9 +74,9 @@ describe('external API settings layout', () => {
   })
 
   it('explains the LAN security boundary next to the enable control', () => {
-    expect(SETTINGS_SOURCE).toContain('启用本机与局域网 API 服务')
+    expect(SETTINGS_SOURCE).toContain('启用外部 API 服务')
     expect(SETTINGS_SOURCE).toContain('所有业务接口都必须携带下方创建的 Bearer Token')
-    expect(SETTINGS_SOURCE).toContain('仅应在你信任的家庭或办公局域网中启用')
+    expect(SETTINGS_SOURCE).toContain('请只在你信任的家庭或办公局域网里这样做')
     expect(SETTINGS_SOURCE).toContain('Windows 防火墙中仅放行受信任网络')
     expect(SETTINGS_SOURCE).toContain('不要通过路由器端口转发、DMZ 或公网 IP 直接暴露')
     expect(SETTINGS_SOURCE).toContain('将页面来源加入 <code>allowedOrigins</code>')

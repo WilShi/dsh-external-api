@@ -1,6 +1,8 @@
+import { isIP } from 'node:net'
 import z from '@deepseek-ai/schemastery'
 import {
   ALL_EXTERNAL_API_SCOPES,
+  DEFAULT_BIND_HOST,
   type ExternalApiConfig,
   type ExternalApiScope,
   type ExternalApiTokenRecord,
@@ -30,6 +32,7 @@ const tokenSchema: z<ExternalApiTokenRecord> = z.object({
 
 export const Config: z<ExternalApiConfig> = z.object({
   enabled: z.boolean().default(false),
+  host: z.string().min(3).max(64).default(DEFAULT_BIND_HOST),
   port: z.number().step(1).min(1024).max(65535).default(DEFAULT_EXTERNAL_API_PORT),
   allowedOrigins: z.array(z.string().min(1).max(2048)).default([]),
   requestBodyLimitBytes: z.number().step(1).min(1024).max(1024 * 1024).default(DEFAULT_BODY_LIMIT_BYTES),
@@ -53,6 +56,7 @@ export function legacyConcurrencyUpgrade(
 }
 
 export function validateExternalApiConfig(config: ExternalApiConfig): void {
+  if (isIP(config.host) === 0) throw new Error('external API host must be an IPv4 or IPv6 literal')
   if (!Number.isSafeInteger(config.port) || (config.port !== 0 && (config.port < 1024 || config.port > 65535))) {
     throw new Error('external API port must be 0 for tests or an integer between 1024 and 65535')
   }

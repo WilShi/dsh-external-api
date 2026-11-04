@@ -3,8 +3,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 export const EXTERNAL_API_PREFIX = '/api/v1'
 export const ADMIN_API_PREFIX = '/external-api-admin'
 export const LOOPBACK_HOST = '127.0.0.1'
-/** IPv4 wildcard used only by the opt-in external listener, never by the DSH management server. */
-export const EXTERNAL_API_BIND_HOST = '0.0.0.0'
+/** Loopback by default: the listener is not reachable from the network until the user opts in. */
+export const DEFAULT_BIND_HOST = '127.0.0.1'
 
 export type ExternalApiScope =
   | 'capabilities:read'
@@ -40,6 +40,8 @@ export interface ExternalApiTokenRecord {
 
 export interface ExternalApiConfig {
   readonly enabled: boolean
+  /** IPv4 or IPv6 literal to bind. Defaults to loopback so the API is not exposed by accident. */
+  readonly host: string
   readonly port: number
   readonly allowedOrigins: string[]
   readonly requestBodyLimitBytes: number

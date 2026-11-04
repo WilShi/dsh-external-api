@@ -8,6 +8,7 @@ export type ListenerState = 'stopped' | 'starting' | 'running' | 'error'
 
 export interface ExternalApiConfig {
   enabled: boolean
+  host: string
   port: number
 }
 
@@ -145,6 +146,7 @@ function parseStatus(body: JsonObject): ExternalApiStatus {
   return {
     config: {
       enabled: config.enabled,
+      host: stringValue(config.host) ?? '127.0.0.1',
       port: parsePort(config.port, '配置'),
     },
     runtime: {

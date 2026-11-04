@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { isIP } from 'node:net'
 import { ALL_EXTERNAL_API_SCOPES, ADMIN_API_PREFIX, type ExternalApiConfig, type ExternalApiScope, type ExternalApiTokenRecord } from './contracts.ts'
 import { issueBearerToken } from './auth.ts'
 import { Config, publicConfig, validateExternalApiConfig } from './config.ts'
@@ -46,7 +47,7 @@ export function createAdminHandler(options: AdminHandlerOptions) {
         requireMethod(request, 'PUT')
         assertNoQuery(url)
         const body = await readJsonObject(request, 64 * 1024)
-        assertOnlyKeys(body, ['enabled', 'port', 'allowedOrigins'])
+        assertOnlyKeys(body, ['enabled', 'host', 'port', 'allowedOrigins'])
         const patch = parseConfigPatch(body)
         await mutate(async () => {
           await options.settings.update(patch)
@@ -132,12 +133,19 @@ function publicToken(token: ExternalApiTokenRecord): Record<string, unknown> {
 function parseConfigPatch(body: Record<string, unknown>): Partial<ExternalApiConfig> {
   const patch: {
     enabled?: boolean
+    host?: string
     port?: number
     allowedOrigins?: string[]
   } = {}
   if (body.enabled !== undefined) {
     if (typeof body.enabled !== 'boolean') throw invalidBody('enabled must be a boolean.')
     patch.enabled = body.enabled
+  }
+  if (body.host !== undefined) {
+    if (typeof body.host !== 'string' || isIP(body.host) === 0) {
+      throw invalidBody('host must be an IPv4 or IPv6 literal.')
+    }
+    patch.host = body.host
   }
   if (body.port !== undefined) {
     if (!Number.isSafeInteger(body.port) || (body.port as number) < 1024 || (body.port as number) > 65535) {

@@ -2,7 +2,6 @@ import { createServer, type Server } from 'node:http'
 import type { Socket } from 'node:net'
 import { randomUUID } from 'node:crypto'
 import {
-  EXTERNAL_API_BIND_HOST,
   LOOPBACK_HOST,
   type ExternalApiHost,
   type ExternalApiConfig,
@@ -18,7 +17,7 @@ export type ExternalApiServerState = 'stopped' | 'starting' | 'running' | 'error
 
 export interface ExternalApiAddress {
   /** Actual socket bind address. The separately returned URL stays directly usable. */
-  readonly host: typeof EXTERNAL_API_BIND_HOST
+  readonly host: string
   readonly port: number
   readonly url: string
 }
@@ -95,8 +94,10 @@ export function createExternalApiServer(options: ExternalApiServerOptions): Exte
         httpServer.on('clientError', (_error, socket) => {
           if (socket.writable) socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
         })
-        const port = await listen(httpServer, options.config.port)
-        currentAddress = { host: EXTERNAL_API_BIND_HOST, port, url: `http://${LOOPBACK_HOST}:${String(port)}` }
+        const bindHost = options.config.host
+        const port = await listen(httpServer, options.config.port, bindHost)
+        const reachableHost = bindHost === '0.0.0.0' || bindHost === '::' ? LOOPBACK_HOST : bindHost
+        currentAddress = { host: bindHost, port, url: `http://${reachableHost}:${String(port)}` }
         router = createExternalApiHandler({
           host: options.host,
           config: options.config,
@@ -107,7 +108,10 @@ export function createExternalApiServer(options: ExternalApiServerOptions): Exte
         })
         state = 'running'
         eventPump.start()
-        logger.info(`dsh-external-api: listening on ${EXTERNAL_API_BIND_HOST}:${String(port)}`)
+        logger.info(`dsh-external-api: listening on ${bindHost}:${String(port)}`)
+        if (bindHost !== LOOPBACK_HOST && bindHost !== '::1') {
+          logger.warn(`dsh-external-api: the API is reachable from the network on ${bindHost}; make sure every token is scoped and rotated`)
+        }
         return currentAddress
       } catch (error) {
         errorCode = listenerErrorCode(error)
@@ -244,7 +248,7 @@ export class EventPump {
   }
 }
 
-async function listen(server: Server, port: number): Promise<number> {
+async function listen(server: Server, port: number, host: string): Promise<number> {
   await new Promise<void>((resolve, reject) => {
     const onError = (error: Error) => {
       server.off('listening', onListening)
@@ -256,7 +260,7 @@ async function listen(server: Server, port: number): Promise<number> {
     }
     server.once('error', onError)
     server.once('listening', onListening)
-    server.listen({ host: EXTERNAL_API_BIND_HOST, port, exclusive: true })
+    server.listen({ host, port, exclusive: true })
   })
   const address = server.address()
   if (address === null || typeof address === 'string') throw new Error('external API listener has no TCP address')

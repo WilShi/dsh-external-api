@@ -3,7 +3,7 @@ import type {
   ExternalApiConfig,
   ExternalApiLogger,
 } from './contracts.ts'
-import { EXTERNAL_API_BIND_HOST } from './contracts.ts'
+import { DEFAULT_BIND_HOST } from './contracts.ts'
 import { validateExternalApiConfig } from './config.ts'
 import { createExternalApiServer, EventPump, type ExternalApiServer, type ExternalApiServerState } from './listener.ts'
 import { OwnershipStore } from './ownership-store.ts'
@@ -11,7 +11,7 @@ import { RunRegistry } from './run-registry.ts'
 
 export interface ExternalApiRuntimeStatus {
   readonly state: ExternalApiServerState
-  readonly host: typeof EXTERNAL_API_BIND_HOST
+  readonly host: string
   readonly port: number
   readonly url?: string
   readonly error?: string
@@ -41,7 +41,7 @@ export class ExternalApiController {
     this.#logger = options.logger
     this.ownership = new OwnershipStore(options.ownershipFile)
     this.runs = new RunRegistry({ eventBufferSize: options.config.eventBufferSize })
-    this.#runtime = { state: 'stopped', host: EXTERNAL_API_BIND_HOST, port: options.config.port }
+    this.#runtime = { state: 'stopped', host: options.config.host, port: options.config.port }
   }
 
   get config(): ExternalApiConfig {
@@ -83,7 +83,7 @@ export class ExternalApiController {
           await this.#stopEventPump()
           this.#server = undefined
           this.#config = snapshot
-          this.#runtime = { state: 'stopped', host: EXTERNAL_API_BIND_HOST, port: snapshot.port }
+          this.#runtime = { state: 'stopped', host: snapshot.host, port: snapshot.port }
           return
         }
         if (previousAddress.port === snapshot.port) {
@@ -128,7 +128,7 @@ export class ExternalApiController {
       await previousServer?.stop()
       this.#server = undefined
       this.#config = snapshot
-      this.#runtime = { state: snapshot.enabled ? 'starting' : 'stopped', host: EXTERNAL_API_BIND_HOST, port: snapshot.port }
+      this.#runtime = { state: snapshot.enabled ? 'starting' : 'stopped', host: snapshot.host, port: snapshot.port }
       if (!snapshot.enabled) {
         await this.#stopEventPump()
         return
@@ -145,14 +145,14 @@ export class ExternalApiController {
       try {
         const address = await server.start()
         this.#runtime = address === undefined
-          ? { state: 'stopped', host: EXTERNAL_API_BIND_HOST, port: snapshot.port }
+          ? { state: 'stopped', host: snapshot.host, port: snapshot.port }
           : { state: 'running', ...address }
       } catch {
         this.#desiredFingerprint = ''
         await this.#stopEventPump()
         this.#runtime = {
           state: 'error',
-          host: EXTERNAL_API_BIND_HOST,
+          host: snapshot.host,
           port: snapshot.port,
           error: server.errorCode ?? 'LISTENER_FAILED',
         }
@@ -175,7 +175,7 @@ export class ExternalApiController {
     } finally {
       await this.#stopEventPump()
       this.#server = undefined
-      this.#runtime = { state: 'stopped', host: EXTERNAL_API_BIND_HOST, port: this.#config.port }
+      this.#runtime = { state: 'stopped', host: this.#config.host, port: this.#config.port }
     }
   }
 

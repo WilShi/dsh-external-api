@@ -71,6 +71,7 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
   const [status, setStatus] = useState<ExternalApiStatus | null>(null)
   const [tokens, setTokens] = useState<TokenSummary[]>([])
   const [enabledDraft, setEnabledDraft] = useState(false)
+  const [hostDraft, setHostDraft] = useState('127.0.0.1')
   const [portDraft, setPortDraft] = useState('47831')
   const [configDirty, setConfigDirty] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -89,6 +90,7 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
   const syncStatus = (next: ExternalApiStatus) => {
     setStatus(next)
     setEnabledDraft(next.config.enabled)
+    setHostDraft(next.config.host)
     setPortDraft(String(next.config.port))
     setConfigDirty(false)
   }
@@ -135,12 +137,14 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
 
   const parsedPort = Number(portDraft)
   const portValid = Number.isInteger(parsedPort) && parsedPort >= MIN_PORT && parsedPort <= MAX_PORT
+  const trimmedHost = hostDraft.trim()
+  const hostValid = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-fA-F:]+)$/u.test(trimmedHost)
   const runtimePort = status?.runtime.state === 'running'
     ? status.runtime.port ?? status.config.port
     : null
   const actualBindAddress = runtimePort === null
     ? '当前未监听'
-    : `${status?.runtime.host ?? '0.0.0.0'}:${runtimePort}`
+    : `${status?.runtime.host ?? '127.0.0.1'}:${runtimePort}`
   const localAccessUrl = runtimePort === null ? null : `http://127.0.0.1:${runtimePort}/api/v1`
   const localAccessText = localAccessUrl ?? '服务启动后可用'
   const badge = statusLabel(status)
@@ -153,12 +157,12 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
       : '保存配置'
 
   const saveConfig = async () => {
-    if (!portValid || saving) return
+    if (!portValid || !hostValid || saving) return
     setSaving(true)
     setError(null)
     setNotice(null)
     try {
-      const next = await api.updateConfig({ enabled: enabledDraft, port: parsedPort })
+      const next = await api.updateConfig({ enabled: enabledDraft, host: trimmedHost, port: parsedPort })
       syncStatus(next)
       if (next.runtime.state === 'error' && next.runtime.error !== undefined) {
         setNotice(null)
@@ -268,14 +272,14 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
             <section className="dsh-external-api-card dsh-external-api-service-card" aria-labelledby="external-api-service-title">
               <div className="dsh-external-api-switch-row">
                 <div className="dsh-external-api-switch-copy">
-                  <strong id="external-api-service-title">启用本机与局域网 API 服务</strong>
+                  <strong id="external-api-service-title">启用外部 API 服务</strong>
                   <span>开启后监听所有 IPv4 网络接口；关闭或再次启用不会改变已有 Token。</span>
                 </div>
                 <input
                   className="dsh-external-api-switch"
                   type="checkbox"
                   role="switch"
-                  aria-label="启用本机与局域网 API 服务"
+                  aria-label="启用外部 API 服务"
                   checked={enabledDraft}
                   disabled={saving}
                   onChange={(event) => { setEnabledDraft(event.target.checked); setConfigDirty(true); setNotice(null) }}
@@ -283,6 +287,23 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
               </div>
 
               <div className="dsh-external-api-config-grid">
+                <label className="dsh-external-api-field">
+                  <span className="dsh-external-api-label">监听地址</span>
+                  <input
+                    className="dsh-external-api-input dsh-external-api-input-mono"
+                    type="text"
+                    inputMode="text"
+                    spellCheck={false}
+                    value={hostDraft}
+                    disabled={saving}
+                    aria-invalid={!hostValid}
+                    onChange={(event) => { setHostDraft(event.target.value); setConfigDirty(true); setNotice(null) }}
+                  />
+                  <span className="dsh-external-api-help">
+                    默认 <code>127.0.0.1</code>，只允许本机访问。只有改成 <code>0.0.0.0</code> 或这台电脑的局域网 IPv4 时，其他设备才能连进来；改动会在保存后重启监听。
+                  </span>
+                </label>
+
                 <label className="dsh-external-api-field">
                   <span className="dsh-external-api-label">监听端口</span>
                   <input
@@ -344,7 +365,7 @@ export function ExternalApiSettings({ api }: ExternalApiSettingsFace) {
               <strong>安全边界</strong>
               <ul>
                 <li>所有业务接口都必须携带下方创建的 Bearer Token；请按应用分别创建，停用应用时及时撤销。</li>
-                <li>服务会绑定 <code>0.0.0.0</code>，仅应在你信任的家庭或办公局域网中启用。</li>
+                <li>服务默认只监听 <code>127.0.0.1</code>；把监听地址改成 <code>0.0.0.0</code> 或局域网 IPv4，才会对网络中的其他设备开放，请只在你信任的家庭或办公局域网里这样做。</li>
                 <li>局域网设备请使用这台电脑的局域网 IPv4 地址，并在 Windows 防火墙中仅放行受信任网络。</li>
                 <li>不要通过路由器端口转发、DMZ 或公网 IP 直接暴露此 HTTP 服务；远程访问应使用受信任的 TLS 反向代理。</li>
                 <li>浏览器网页调用还需将页面来源加入 <code>allowedOrigins</code>；非浏览器客户端不受该项限制。</li>

@@ -30,6 +30,7 @@ function token(overrides: Partial<ExternalApiTokenRecord> = {}): ExternalApiToke
 function config(overrides: Partial<ExternalApiConfig> = {}): ExternalApiConfig {
   return {
     enabled: false,
+    host: '127.0.0.1',
     port: DEFAULT_EXTERNAL_API_PORT,
     allowedOrigins: [],
     requestBodyLimitBytes: DEFAULT_BODY_LIMIT_BYTES,

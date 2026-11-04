@@ -14,6 +14,7 @@ import type { ExternalApiConfig } from '../src/contracts.js'
 function config(overrides: Partial<ExternalApiConfig> = {}): ExternalApiConfig {
   return {
     enabled: false,
+    host: '127.0.0.1',
     port: DEFAULT_EXTERNAL_API_PORT,
     allowedOrigins: [],
     requestBodyLimitBytes: DEFAULT_BODY_LIMIT_BYTES,
@@ -72,7 +73,7 @@ function harness(initial = config()) {
     update: vi.fn(async (patch: Partial<ExternalApiConfig>) => { current = { ...current, ...patch } }),
   }
   const controller = {
-    status: vi.fn(() => ({ state: 'stopped', host: '0.0.0.0', port: current.port })),
+    status: vi.fn(() => ({ state: 'stopped', host: current.host, port: current.port })),
     configure: vi.fn(async () => undefined),
     revokeToken: vi.fn(async () => undefined),
   }
@@ -176,18 +177,20 @@ describe('external API loopback administration', () => {
     const admin = harness()
     const updated = await admin.call('PUT', '/external-api-admin/config', {
       enabled: true,
+      host: '0.0.0.0',
       port: 43211,
       allowedOrigins: ['https://client.example.test'],
     })
     expect(updated.response.statusCode).toBe(200)
-    expect(admin.current()).toMatchObject({ enabled: true, port: 43211, allowedOrigins: ['https://client.example.test'] })
+    expect(admin.current()).toMatchObject({ enabled: true, host: '0.0.0.0', port: 43211, allowedOrigins: ['https://client.example.test'] })
     expect(admin.controller.configure).toHaveBeenCalledTimes(1)
 
     for (const body of [
       { port: 80 },
       { port: 65_536 },
       { port: 43210.5 },
-      { host: '0.0.0.0' },
+      { host: 'not-an-ip' },
+      { host: '127.0.0.1.example' },
       { tls: false },
     ]) {
       const rejected = await admin.call('PUT', '/external-api-admin/config', body)

@@ -2,7 +2,7 @@ import { createServer as createHttpServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import { issueBearerToken } from '../src/auth.js'
-import { EXTERNAL_API_BIND_HOST } from '../src/contracts.js'
+import { DEFAULT_BIND_HOST } from '../src/contracts.js'
 import { createExternalApiServer, type ExternalApiServer } from '../src/listener.js'
 import {
   closeHttpServer,
@@ -39,28 +39,43 @@ describe('external API listener lifecycle', () => {
     const probe = createHttpServer()
     await expect(new Promise<void>((resolve, reject) => {
       probe.once('error', reject)
-      probe.listen({ host: EXTERNAL_API_BIND_HOST, port: 43120, exclusive: true }, () => resolve())
+      probe.listen({ host: DEFAULT_BIND_HOST, port: 43120, exclusive: true }, () => resolve())
     })).resolves.toBeUndefined()
     await closeHttpServer(probe)
   })
 
-  it('binds all IPv4 interfaces, keeps a usable loopback URL, and makes start idempotent', async () => {
+  it('binds loopback by default, keeps a usable loopback URL, and makes start idempotent', async () => {
     const harness = await startHarness()
     running.push(harness.server)
     const first = harness.server.address()
 
-    expect(first).toMatchObject({ host: '0.0.0.0' })
+    expect(first).toMatchObject({ host: '127.0.0.1' })
     expect(first?.port).toBeGreaterThan(0)
     expect(first?.url).toBe(`http://127.0.0.1:${String(first?.port)}`)
     await expect(harness.server.start()).resolves.toEqual(first)
     await waitUntil(() => harness.fake.calls.muxStream.mock.calls.length === 1)
     expect(harness.fake.calls.hostStream).toHaveBeenCalledTimes(1)
+  })
+
+  it('binds all IPv4 interfaces only when the configuration opts in', async () => {
+    const fake = createFakeHost()
+    const token = issueBearerToken('lan-exposure')
+    const server = createExternalApiServer({
+      config: externalConfig([token.record], { host: '0.0.0.0', port: 0 }),
+      host: fake.hostApi,
+    })
+    running.push(server)
+    const address = await server.start()
+
+    expect(address).toMatchObject({ host: '0.0.0.0' })
+    expect(address?.port).toBeGreaterThan(0)
+    expect(address?.url).toBe(`http://127.0.0.1:${String(address?.port)}`)
 
     const lanAddress = Object.values(networkInterfaces())
       .flatMap(entries => entries ?? [])
       .find(entry => entry.family === 'IPv4' && !entry.internal)?.address
     if (lanAddress !== undefined) {
-      const health = await fetch(`http://${lanAddress}:${String(first?.port)}/api/v1/health`, {
+      const health = await fetch(`http://${lanAddress}:${String(address?.port)}/api/v1/health`, {
         signal: AbortSignal.timeout(5_000),
       })
       expect(health.status).toBe(200)
@@ -103,7 +118,7 @@ describe('external API listener lifecycle', () => {
     const replacement = createHttpServer()
     await expect(new Promise<void>((resolve, reject) => {
       replacement.once('error', reject)
-      replacement.listen({ host: EXTERNAL_API_BIND_HOST, port, exclusive: true }, () => resolve())
+      replacement.listen({ host: DEFAULT_BIND_HOST, port, exclusive: true }, () => resolve())
     })).resolves.toBeUndefined()
     await closeHttpServer(replacement)
   })

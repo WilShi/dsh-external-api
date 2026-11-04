@@ -8,7 +8,7 @@ import {
 import { setTimeout as delay } from 'node:timers/promises'
 import { vi } from 'vitest'
 import { issueBearerToken, type IssuedToken } from '../src/auth.js'
-import { EXTERNAL_API_BIND_HOST, type ExternalApiHost, type ExternalApiConfig, type ExternalApiTokenRecord } from '../src/contracts.js'
+import { DEFAULT_BIND_HOST, type ExternalApiHost, type ExternalApiConfig, type ExternalApiTokenRecord } from '../src/contracts.js'
 import { createExternalApiServer, type ExternalApiServer } from '../src/listener.js'
 
 export function rpcOk<T>(request: { rpcId: string }, value: T) {
@@ -144,6 +144,7 @@ export function externalConfig(
 ): ExternalApiConfig {
   return {
     enabled: true,
+    host: DEFAULT_BIND_HOST,
     port: 0,
     allowedOrigins: [],
     requestBodyLimitBytes: 256 * 1024,
@@ -251,7 +252,7 @@ export async function occupyExternalApiPort(): Promise<{ server: HttpServer; por
   const server = createHttpServer()
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
-    server.listen({ host: EXTERNAL_API_BIND_HOST, port: 0, exclusive: true }, () => resolve())
+    server.listen({ host: DEFAULT_BIND_HOST, port: 0, exclusive: true }, () => resolve())
   })
   return { server, port: (server.address() as AddressInfo).port }
 }

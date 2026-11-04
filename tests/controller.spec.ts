@@ -34,7 +34,7 @@ describe('external API live controller', () => {
     controllers.push(controller)
     await controller.configure(initial)
     const initialStatus = controller.status()
-    expect(initialStatus).toMatchObject({ state: 'running', host: '0.0.0.0' })
+    expect(initialStatus).toMatchObject({ state: 'running', host: '127.0.0.1' })
     expect(initialStatus.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/u)
     const url = initialStatus.url
     expect(url).toBeDefined()
@@ -76,7 +76,7 @@ describe('external API live controller', () => {
     })
     controllers.push(controller)
     await controller.configure(initial)
-    expect(controller.status()).toMatchObject({ state: 'running', host: '0.0.0.0' })
+    expect(controller.status()).toMatchObject({ state: 'running', host: '127.0.0.1' })
     const originalUrl = controller.status().url as string
     expect(originalUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/u)
 
